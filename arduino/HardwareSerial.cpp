@@ -412,8 +412,17 @@ try_again:
 #if defined(__AVR_ATmega8__)
   config |= 0x80; // select UCSRC register (shared with UBRRH)
 #endif
-  *_ucsrc = config;
-  
+  if((config == SERIAL_9N1)){
+	  //9 bit seatalk
+	  *_ucsrc = SERIAL_8N1;
+	  //UCSRB bit 4 on, makes 9 bit data tx/rx
+	  //The 9th bit is read and written by using the RXB8 and TXB8 bits in UCSRB, respectively.
+	  *_ucsrb |= 4;
+  }else{
+	  //UCSRB set 9 bit off in *_ucsrb here to be sure its 0
+	  *_ucsrb &= 4;
+	  *_ucsrc = config;
+  }
   sbi(*_ucsrb, _rxen);
   sbi(*_ucsrb, _txen);
   sbi(*_ucsrb, _rxcie);
@@ -486,6 +495,35 @@ size_t HardwareSerial::write(uint8_t c)
   transmitting = true;
   sbi(*_ucsra, TXC0);
   
+  return 1;
+}
+
+//9 bit seatalk protocol
+size_t HardwareSerial::write9(uint8_t c, bool p)
+{
+  int i = (_tx_buffer->head + 1) % SERIAL_BUFFER_SIZE;
+
+  // If the output buffer is full, there's nothing for it other than to
+  // wait for the interrupt handler to empty it a bit
+  // ???: return 0 here instead?
+  while (i == _tx_buffer->tail)
+    ;
+
+  _tx_buffer->buffer[_tx_buffer->head] = c;
+  _tx_buffer->head = i;
+
+  //set TXB8 (bit 0) with 1 or 0
+    if(p ){
+      *_ucsrb=*_ucsrb | B00000001;
+    }else{
+      *_ucsrb=*_ucsrb & B11111110;
+    }
+
+  sbi(*_ucsrb, _udrie);
+  // clear the TXC bit -- "can be cleared by writing a one to its bit location"
+  transmitting = true;
+  sbi(*_ucsra, TXC0);
+
   return 1;
 }
 

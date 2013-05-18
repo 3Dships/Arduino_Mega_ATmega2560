@@ -18,6 +18,7 @@
 
   Modified 28 September 2010 by Mark Sproul
   Modified 14 August 2012 by Alarus
+  Modified 18 May 2013 to support 9 bit Seatalk
 */
 
 #ifndef HardwareSerial_h
@@ -60,6 +61,8 @@ class HardwareSerial : public Stream
     virtual int read(void);
     virtual void flush(void);
     virtual size_t write(uint8_t);
+    //support 9 bit seatalk
+    virtual size_t write9(uint8_t c, bool p);
     inline size_t write(unsigned long n) { return write((uint8_t)n); }
     inline size_t write(long n) { return write((uint8_t)n); }
     inline size_t write(unsigned int n) { return write((uint8_t)n); }
@@ -73,6 +76,9 @@ class HardwareSerial : public Stream
 #define SERIAL_6N1 0x02
 #define SERIAL_7N1 0x04
 #define SERIAL_8N1 0x06
+//seatalk
+#define SERIAL_9N1 0x07
+
 #define SERIAL_5N2 0x08
 #define SERIAL_6N2 0x0A
 #define SERIAL_7N2 0x0C
